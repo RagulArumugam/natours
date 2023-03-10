@@ -1,6 +1,16 @@
 const dotenv = require('dotenv');
 dotenv.config({ path: './config.env' });
 const mongoose = require('mongoose');
+
+
+process.on("uncaughtException", err => {
+  // close the server
+  server.close(() => {
+    //shuttingdown the application
+    process.exit(1);
+  })
+})
+
 const app = require('./app');
 
 const DB = process.env.DATABASE.replace(
@@ -16,14 +26,6 @@ const port = 3000;
 const server = app.listen(port, () => console.log(`Example app listening on port ${port}!`));
 
 process.on("unhandledRejection", err => {
-  // close the server
-  server.close(() => {
-    //shuttingdown the application
-    process.exit(1);
-  })
-})
-
-process.on("uncaughtException", err => {
   // close the server
   server.close(() => {
     //shuttingdown the application
