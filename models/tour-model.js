@@ -57,7 +57,23 @@ const tourSchema = new mongoose.Schema({
   startDates: {
     type: [Date],
   },
-});
+},
+// to work the vistual propeties
+{
+  toJSON : {virtuals : true},
+  toObject : {virtuals : true}
+}
+);
+
+tourSchema.virtual("durationInWeek").get(function() {
+  return this.duration / 7
+})
+
+//DOCUMENT MIDDLEWARE runs before .save() and .create()
+tourSchema.pre("save", function() {
+  console.log(this); // current document
+})
+
 
 const Tour = mongoose.model('Tour', tourSchema);
 

@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.route('/').get(tourController.getAllTours).post(tourController.addTour);
 router.route('/tour-status').get(tourController.gettourstats)
+router.route('/motnhlystatus/:year').get(tourController.getMotnhlyStatus)
 
 
 

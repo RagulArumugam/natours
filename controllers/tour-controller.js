@@ -73,7 +73,6 @@ exports.getAllTours = async (req, res) => {
 
 exports.gettourstats = async (req, res) => {
   try {
-    console.log("entering")
     const tourStatus = await Tour.aggregate([
       {
         $match: { ratingAverage : { $gte : 4.5} }
@@ -102,6 +101,44 @@ exports.gettourstats = async (req, res) => {
 };
 
 
+exports.getMotnhlyStatus = async (req, res) => {
+  try {
+    const { year } = req.params
+    const plan = await Tour.aggregate([
+      {
+        $unwind: "$startDates"
+      },
+      {
+        $match: { startDates : {
+          $gte : new Date(`${year}-01-01`),
+          $lte : new Date(`${year}-12-31`)
+        }}
+      },
+      {
+        $group: { 
+          _id: { $month : "$startDates" },
+          numToursStarts : { $sum : 1 },
+          tours: { $push : "$name" },
+         },
+        },
+      { 
+        $project: { _id : 0 }
+      },
+      { 
+        $sort: { numToursStarts : -1 }
+      }
+    ])
+    res.status(200).json({
+      status: 'success',
+      data: plan,
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'fail',
+      message: err,
+    });
+  }
+};
 
 exports.addTour = async (req, res) => {
   try {
