@@ -2,7 +2,7 @@ const AppError = require("../utilities/appError");
 const User = require("../models/user-modal")
 
 
-exports.getAllUser = async(req, res ,  next) => {
+exports.getAllUser = async(req, res , next) => {
   try{
     const allUsers = await User.find()
     res.status(201).json({

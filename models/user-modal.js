@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema({
     required: true,
     min: [6, "value must be greater than 6 chanracdters"],
     max: [16, "value must be greater than 16 chanracdters"],
+    select: false
   },
   passwordConfirm: {
     type: String,
@@ -31,6 +32,7 @@ const userSchema = new mongoose.Schema({
     validate: {
       // works on create and save
       validator: function(el) {
+        console.log(el,this);
         return el === this.password
     } , message: "Password are not the same"
   }
@@ -53,6 +55,15 @@ userSchema.pre("save" , async function (next) {
   this.passwordConfirm = undefined
   next()
 })
+
+
+userSchema.methods.correctPassword =async function(candidatePassword,userPassword){
+  console.log("entering checking");
+  bcrypt.compare(candidatePassword,userPassword, function(err,isMatch) {
+    consle.log("ismatch",isMatch);
+  }
+  );
+}
 
 
 const User = mongoose.model('User', userSchema);
