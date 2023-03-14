@@ -1,7 +1,8 @@
+const { promisify } = require("util");
 const AppError = require("../utilities/appError");
 const User = require("../models/user-modal");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs")
+const bcrypt = require("bcryptjs");
 
 
 const signInToken = id => {
@@ -9,7 +10,6 @@ const signInToken = id => {
 }
 
 exports.signup = async (req,res,next) => {
-  console.log("entering");
   try{
     const user = await User.create({
       name: req.body.name,
@@ -35,20 +35,20 @@ exports.login = async (req,res,next) => {
   try{
     const { email , password } = {...req.body}
     
+    console.log(email,password)
+
     // email and password exist 
     if(!email || !password){
       return next(new AppError("please provide the email and password",400));
     }
     // user exist and password is correct
     const user = await User.findOne({email}).select("+password");
-    console.log("user",user,password);
-    const correct = await bcrypt.compare(password , user.password);
-    console.log("user",user);
+    const correct = await user.correctPassword(String(password) , user.password);
     if(!user || !correct){
       return next(new AppError("Incorrect email or password",401));
     }
-    console.log(user);
-    //if okat send the token to client
+
+    //generate token
     const token = signInToken(user._id)
 
     res.status(201).json({
@@ -58,6 +58,40 @@ exports.login = async (req,res,next) => {
     });
   }
   catch(err) {
-    next(new APIError(err,404))
+    next(new AppError(err,404))
+  }
+}
+
+exports.protect = async(req,res,next) => {
+  try{
+    let token
+    //1 get the token and chekc if its there
+    if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+      token = req.headers.authorization.split(" ")[1]
+    }
+    if(!token){
+    return next(new AppError("You are not logged in, please login to access",401))
+    }
+    //2 validating the token
+    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+    
+    //3 if the user exist
+    const user = await User.findById(decoded.id)
+
+    if(!user){
+      return next(new AppError("User not found",401))
+    }
+    
+    //4 if the usr changed password after the token was issued
+    if(user.changedPasswordAfter(decoded.iat)){
+      return next(new AppError("User recently changes password please login again",401))
+    }
+
+    req.user = user;
+
+    next()
+  }
+  catch(err) {
+    next(new AppError(err,404))
   }
 }
