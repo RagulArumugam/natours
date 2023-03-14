@@ -16,6 +16,7 @@ exports.signup = async (req,res,next) => {
       email: req.body.email,
       password: req.body.password,
       passwordConfirm: req.body.passwordConfirm,
+      role: req.body.role,
     })
 
     const token = signInToken(user._id)
@@ -83,10 +84,11 @@ exports.protect = async(req,res,next) => {
     }
     
     //4 if the usr changed password after the token was issued
-    if(user.changedPasswordAfter(decoded.iat)){
-      return next(new AppError("User recently changes password please login again",401))
-    }
+    // if(user.changedPasswordAfter(decoded.iat)){
+    //   return next(new AppError("User recently changes password please login again",401))
+    // }
 
+    console.log("protect",user);
     req.user = user;
 
     next()
@@ -94,4 +96,24 @@ exports.protect = async(req,res,next) => {
   catch(err) {
     next(new AppError(err,404))
   }
+}
+
+
+// for user roles
+exports.restrictTo = (...roles) => {
+  return async (req,res,next) => {
+    try{
+      console.log(req.user.role)
+      if(!roles.includes(req.user.role)){
+        return next(new AppError("You do not have permission to perform this action",403))
+      }
+
+      res.status(200).json({
+        message: "success"
+      })
+      // next()
+    } catch(err) {
+      next(new AppError(err,404))
+    }
+} 
 }

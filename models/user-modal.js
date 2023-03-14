@@ -24,6 +24,10 @@ const userSchema = new mongoose.Schema({
     max: [16, "value must be greater than 16 chanracdters"],
     select: false
   },
+  role: {
+    type: String,
+    enum: ["user","guide","lead-guide","admin"],
+  },
   passwordConfirm: {
     type: String,
     required: true,
@@ -37,7 +41,7 @@ const userSchema = new mongoose.Schema({
     } , message: "Password are not the same"
   }
 },
-passwordChangedAt: Date
+passwordChangedAt: Date,
 },
 // to work the vistual propeties
 {
