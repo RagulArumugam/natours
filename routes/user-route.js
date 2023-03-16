@@ -7,6 +7,7 @@ router.post('/signup',authController.signup)
 router.post('/login',authController.login)
 router.post('/forgotPassword',authController.forgotPassowrd)
 router.patch('/resetPassword/:token',authController.resetPassowrd)
+router.patch('/updateMyPassword',authController.protect,authController.updatePassword)
 
 router
   .route('/')

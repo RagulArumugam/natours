@@ -90,7 +90,6 @@ exports.protect = async(req,res,next) => {
     //   return next(new AppError("User recently changes password please login again",401))
     // }
 
-    console.log("protect",user);
     req.user = user;
 
     next()
@@ -189,6 +188,44 @@ exports.resetPassowrd = async (req,res,next) => {
       data: {user},
     });
 
+  }
+  catch(err) {
+    next(new AppError(err,400))
+  }
+}
+
+
+exports.updatePassword = async (req,res,next) => {
+  //get user based on token
+  try{
+    // check for the token and get the id
+    const user = await User.findById(req.user.id).select("+password");
+
+    if(!user) {
+      return next(new AppError("User not found or token got expired",400))
+    }
+
+    console.log(user)
+    let passwordChecking = await user.correctPassword(String(req.body.currentPassword), user.password);
+
+    if(!passwordChecking) {
+      return next(new AppError("your current password is wrong",400))
+    }
+
+    user.password = req.body.password
+    user.passwordConfirm = req.body.passwordConfirm;
+
+    await user.save();
+
+    const token = signInToken(user._id)
+
+    res.status(200).json({
+      status: "success",
+      message: "password updated successfully",
+      data: user,
+      token
+    })
+    //change the password and other parameters
   }
   catch(err) {
     next(new AppError(err,400))
