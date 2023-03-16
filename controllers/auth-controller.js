@@ -1,5 +1,6 @@
 const { promisify } = require("util");
 const AppError = require("../utilities/appError");
+const sendEmail = require("../utilities/email");
 const User = require("../models/user-modal");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -116,4 +117,49 @@ exports.restrictTo = (...roles) => {
       next(new AppError(err,404))
     }
 } 
+}
+
+exports.forgotPassowrd =async (req,res,next) => {
+//get user by email
+try{
+  const user = await User.findOne({ email: req.body.email })
+  if(!user){
+    return next(new AppError("User not found",404))
+  }
+  // generate the token
+  const resetToken =await user.createPassowrdResetToken()
+  console.log(resetToken)
+  // save the data without validation
+  await user.save({validateBeforeSave: false})
+  
+  //send it back to users email
+  const restURL  = `${req.protocol}://${req.get("host")}/api/v1/users/resetPassword/${resetToken}`
+
+  try{
+    await sendEmail({
+      email: user.email,
+      subject: "your passowrd reset Token (available for 10 mins)",
+      message: `please use this link to reset your password ${restURL}`
+    })
+  } catch(err) {
+    user.passwordResetToken = undefined,
+    user.PasswordResetExpires = undefined
+    await user.save({validateBeforeSave: false})
+    return next(new AppError(err+"there was error in sending email please try again after sometime",500))
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: "Token sent successfully",
+  })
+}
+catch(err) {
+  next(new AppError(err,400))
+}
+}
+
+
+exports.resetPassowrd = async (req,res,next) => {
+
+  
 }
