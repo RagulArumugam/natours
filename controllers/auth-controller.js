@@ -4,6 +4,7 @@ const sendEmail = require("../utilities/email");
 const User = require("../models/user-modal");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto")
 
 
 const signInToken = id => {
@@ -160,6 +161,36 @@ catch(err) {
 
 
 exports.resetPassowrd = async (req,res,next) => {
+  //get user based on token
+  try{
+    const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex")
+    const user = await User.findOne({ passwordResetToken: hashedToken , PasswordResetExpires: {$gte : Date.now() } });
 
+
+    if(!user){
+      return next(new AppError("User not found or token got expired",400))
+    }
+
+    //set the new passowrd if the tocke not expired
+    //update changedPassword
+    user.password = req.body.password;
+    user.passwordConfirm = req.body.passwordConfirm;
+    user.passwordResetToken = undefined,
+    user.PasswordResetExpires = undefined
+
+    await user.save();
   
+    
+    //Log the user in
+    const token = signInToken(user._id)
+    res.status(201).json({
+      status: 'success',
+      token,
+      data: {user},
+    });
+
+  }
+  catch(err) {
+    next(new AppError(err,400))
+  }
 }
