@@ -11,6 +11,25 @@ const signInToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET , {expiresIn: process.env.JWT_EXPIRES_IN});
 }
 
+const createAndSendTokenRes = (user,res) => {
+  const token = signInToken(user._id)
+    const cookieOptions = {
+      expires: new Date(Date.now() + process.env.JWT_COOKIES_EXPIRES_IN * 24 * 60 * 60 * 1000),
+      // secure: true,
+      httpOnly: true,
+    }
+
+    //remove the password from the user
+    user.password = undefined
+    // if(process.env.NODE_ENV === "production") cookieOptions.secure = true
+    res.cookie("jwt",token, cookieOptions)
+    res.status(201).json({
+      status: 'success',
+      token,
+      data: {user},
+    });
+}
+
 exports.signup = async (req,res,next) => {
   try{
     const user = await User.create({
@@ -21,13 +40,7 @@ exports.signup = async (req,res,next) => {
       role: req.body.role,
     })
 
-    const token = signInToken(user._id)
-
-    res.status(201).json({
-      status: 'success',
-      token,
-      data: {user},
-    });
+    createAndSendTokenRes(user,res)
   }
   catch(err) {
     next(new AppError(err,404))
@@ -52,13 +65,7 @@ exports.login = async (req,res,next) => {
     }
 
     //generate token
-    const token = signInToken(user._id)
-
-    res.status(201).json({
-      status: 'success',
-      token,
-      data: {user},
-    });
+    createAndSendTokenRes(user,res)
   }
   catch(err) {
     next(new AppError(err,404))
@@ -176,17 +183,10 @@ exports.resetPassowrd = async (req,res,next) => {
     user.passwordConfirm = req.body.passwordConfirm;
     user.passwordResetToken = undefined,
     user.PasswordResetExpires = undefined
-
     await user.save();
-  
-    
+
     //Log the user in
-    const token = signInToken(user._id)
-    res.status(201).json({
-      status: 'success',
-      token,
-      data: {user},
-    });
+    createAndSendTokenRes(user,res)
 
   }
   catch(err) {

@@ -45,6 +45,11 @@ const userSchema = new mongoose.Schema({
 passwordChangedAt: Date,
 passwordResetToken: String,
 PasswordResetExpires: Date,
+active: {
+  type: Boolean,
+  default: true,
+  select: false
+}
 },
 // to work the vistual propeties
 {
@@ -62,6 +67,11 @@ userSchema.pre("save" , async function (next) {
   this.password = await bcrypt.hash(this.password , 12);
   this.passwordConfirm = undefined
   next()
+})
+
+userSchema.pre(/^find/ , async function(next){
+  this.find({ active: { $ne: false }})
+  next();
 })
 
 userSchema.pre("save" , async function(next){
